@@ -44,7 +44,7 @@ function etcd_set_default_stdin {
 	ERROR=$(etcdctl --no-sync -C $ETCD mk $ETCD_PATH/$1 2>&1 >/dev/null)
 	if [[ $? -ne 0 && $(echo $ERROR | grep -ive "key already exists") ]]; then
 		echo "etcd_set_default_stdin: an etcd error occurred ($ERROR)"
-        echo "aborting..."
+				echo "aborting..."
 		exit 1
 	fi
 	set -e
