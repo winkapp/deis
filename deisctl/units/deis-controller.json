@@ -22,11 +22,11 @@
             "containers":[
                {
                   "name":"deis-controller",
-                  "image":"registry.smothiki.io:5000/deis/controller:git-bf6077d",
+                  "image":"registry.smothiki.io:5000/deis/controller:git-bca9e36",
                    "env":[
                      {
                        "name" : "HOST",
-                       "value" : "10.240.3.1"
+                       "value" : "10.240.84.7"
                      }
                    ],
                    "volumeMounts": [
