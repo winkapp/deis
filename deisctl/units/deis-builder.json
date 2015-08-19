@@ -1,0 +1,59 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-builder",
+      "labels":{
+         "name":"deis-builder"
+      }
+   },
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"deis-builder"
+      },
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"deis-builder"
+            }
+         },
+         "spec":{
+            "containers":[
+               {
+                  "name":"deis-builder",
+                  "image":"registry.smothiki.io:5000/deis/builder:git-b75a13b",
+                   "env":[
+                     {
+                       "name" : "HOST",
+                       "value" : "10.240.84.7"
+                     }
+                   ],
+                   "volumeMounts": [
+                      { "name": "envproxy",
+                        "mountPath": "/etc/environment_proxy"
+                      },
+                      {
+                        "name": "docker",
+                        "mountPath": "/var/lib/docker"
+                      }
+                    ],
+                    "securityContext": {
+                      "privileged": true
+                    }
+               }
+            ],
+            "volumes":[
+              { "name": "envproxy",
+                "hostPath": {
+                    "path": "/etc/environment_proxy"}
+              },
+              {
+                "name": "docker",
+                "emptyDir": {}
+              }
+            ]
+         }
+      }
+   }
+}

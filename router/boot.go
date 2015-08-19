@@ -3,7 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -14,7 +20,6 @@ import (
 	"github.com/ActiveState/tail"
 	"github.com/Sirupsen/logrus"
 	"github.com/coreos/go-etcd/etcd"
-
 	"github.com/deis/deis/router/logger"
 )
 
@@ -43,9 +48,9 @@ func main() {
 
 	etcdPath := getopt("ETCD_PATH", "/deis/router")
 
-	hostEtcdPath := getopt("HOST_ETCD_PATH", "/deis/router/hosts/"+host)
+	//	hostEtcdPath := getopt("HOST_ETCD_PATH", "/deis/router/hosts/"+host)
 
-	externalPort := getopt("EXTERNAL_PORT", "80")
+	//externalPort := getopt("EXTERNAL_PORT", "80")
 
 	client := etcd.NewClient([]string{"http://" + host + ":" + etcdPort})
 
@@ -58,7 +63,7 @@ func main() {
 	mkdirEtcd(client, "/deis/domains")
 	mkdirEtcd(client, "/deis/builder")
 	mkdirEtcd(client, "/deis/certs")
-	mkdirEtcd(client, "/deis/router/hosts")
+	//mkdirEtcd(client, "/deis/router/hosts")
 	mkdirEtcd(client, "/deis/router/hsts")
 	mkdirEtcd(client, "/registry/services/specs/default")
 
@@ -81,7 +86,8 @@ func main() {
 
 	go launchConfd(host + ":" + etcdPort)
 
-	go publishService(client, hostEtcdPath, host, externalPort, uint64(ttl.Seconds()))
+	//go publishService(client, hostEtcdPath, host, externalPort, uint64(ttl.Seconds()))
+	go publishApps(client, uint64(ttl.Seconds()))
 
 	log.Info("deis-router running...")
 
@@ -89,6 +95,97 @@ func main() {
 	signal.Notify(exitChan, syscall.SIGTERM, syscall.SIGINT)
 	go cleanOnExit(exitChan)
 	<-exitChan
+}
+
+func publishApps(etcdClient *etcd.Client, ttl uint64) {
+	/*client, err := client.NewInCluster()
+	if err != nil {
+		log.Fatalf("error getting client: %v", err)
+	}
+	namespaces, err := client.Namespaces().List(labels.Everything(), fields.Everything())
+	if err != nil {
+		log.Fatalf("error getting namespaces: %v", err)
+	}
+	for _, namespace := range namespaces.Items {
+		log.Info("name is", namespace.ObjectMeta.Name)
+	}*/
+	log.Info("in publish apps ")
+	tlsConfig := &tls.Config{}
+	if _, err := os.Stat("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); os.IsNotExist(err) {
+		tlsConfig.InsecureSkipVerify = false
+	} else {
+		CaData, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+		if err != nil {
+			log.Fatalf("can't read from the certificate: %v", err)
+		}
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(CaData)
+		tlsConfig.RootCAs = certPool
+		tlsConfig.MinVersion = tls.VersionTLS10
+	}
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	token, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		log.Fatalf("can't read the token: %v", err)
+	}
+	client := &http.Client{Transport: transport}
+
+	for {
+		host := getopt("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+		port := getopt("KUBERNETES_SERVICE_PORT", "443")
+		servURL := "https://" + host + ":" + port + "/api/v1/namespaces/"
+		servReq, err := http.NewRequest("GET", servURL, nil)
+		servReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", string(token)))
+		if err != nil {
+			log.Fatalf("can't connect to the apiserver: %v", err)
+		}
+		//servClient := &http.Client{}
+		servResp, err := client.Do(servReq)
+		if err != nil {
+			log.Fatalf("error in sending the request: %v", err)
+		}
+		body, _ := ioutil.ReadAll(servResp.Body)
+		servResp.Body.Close()
+		var data map[string]interface{}
+		err = json.Unmarshal(body, &data)
+		nameSpaces := data["items"].([]interface{})
+		for i := range nameSpaces {
+			nameSpace := nameSpaces[i].(map[string]interface{})
+			metadata := nameSpace["metadata"].(map[string]interface{})
+			//log.Info("response Body: %v", metadata["name"])
+
+			servURL = "https://" + host + ":" + port + "/api/v1/namespaces/" + metadata["name"].(string) + "/services"
+			servReq, err = http.NewRequest("GET", servURL, nil)
+			servReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", string(token)))
+			if err != nil {
+				log.Fatalf("can't connect to the apiserver: %v", err)
+			}
+			//	servClient = &http.Client{}
+			servResp, err = client.Do(servReq)
+			if err != nil {
+				log.Fatalf("error in sending the request: %v", err)
+			}
+			body, _ = ioutil.ReadAll(servResp.Body)
+			servResp.Body.Close()
+
+			var data1 map[string]interface{}
+			err = json.Unmarshal(body, &data1)
+			services := data1["items"].([]interface{})
+			for i := range services {
+				service := services[i].(map[string]interface{})
+				spec := service["spec"].(map[string]interface{})
+				serviceMetadata := service["metadata"].(map[string]interface{})
+				labels := serviceMetadata["labels"].(map[string]interface{})
+				//log.Info("response Body: %v", labels["name"])
+				//log.Info("response Body: %v", spec["clusterIP"])
+				if labels["name"] != nil && labels["app"] != "deis" {
+					setEtcd(etcdClient, "/registry/services/specs/"+metadata["name"].(string)+"/"+labels["name"].(string), spec["clusterIP"].(string), ttl)
+				}
+			}
+		}
+		time.Sleep(timeout)
+	}
 }
 
 func launchCron() {
@@ -226,3 +323,21 @@ func getopt(name, dfault string) string {
 	}
 	return value
 }
+
+/*
+func getHostIP(dfault string) string {
+	f, err := os.Open("/etc/environment")
+	if err != nil {
+		log.Println(err)
+	}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		s := strings.Split(line, "=")
+		name, ip := s[0], s[1]
+		if name == "COREOS_PRIVATE_IPV4" {
+			return ip
+		}
+	}
+	return dfault
+}*/

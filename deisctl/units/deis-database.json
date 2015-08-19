@@ -1,0 +1,49 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-database",
+      "labels":{
+         "name":"deis-database"
+      }
+   },
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"deis-database"
+      },
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"deis-database"
+            }
+         },
+         "spec":{
+            "containers":[
+               {
+                  "name":"deis-database",
+                  "image":"registry.smothiki.io:5000/deis/database:git-31d2adb",
+                   "env":[
+                     {
+                       "name" : "HOST",
+                       "value" : "10.240.3.1"
+                     }
+                   ],
+                   "volumeMounts": [
+                      {
+                        "name": "postgresql",
+                        "mountPath": "/var/lib/postgresql"
+                      }
+                    ]
+               }
+            ],
+            "volumes":[
+              {
+                "name": "postgresql",
+                "emptyDir": {}
+              }
+            ]
+         }
+      }
+   }
+}
