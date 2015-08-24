@@ -44,13 +44,18 @@ At a glance, you will need:
 In most cases, you should simply install according to the instructions. There
 are a few special cases, though. We cover these below.
 
-Configuring Go
-``````````````
+Configuring Go for Cross Compiling
+``````````````````````````````````
 
 If your local workstation does not support the linux/amd64 target environment, you will
 have to install Go from source with cross-compile support for that environment. This is
 because some of the components are built on your local machine and then injected into a
 docker container.
+
+.. note::
+
+    You must have Go 1.5 or later. If you use Go 1.5, enable the Vendor
+    Experiment by setting `export GO15VENDOREXPERIMENT=1`.
 
 Homebrew users can just install with cross compiling support:
 
@@ -58,16 +63,8 @@ Homebrew users can just install with cross compiling support:
 
     $ brew install go --with-cc-common
 
-It is also straightforward to build Go from source:
-
-.. code-block:: console
-
-    $ sudo su
-    $ curl -sSL https://golang.org/dl/go1.5.src.tar.gz | tar -v -C /usr/local -xz
-    $ cd /usr/local/go/src
-    $ # compile Go for our default platform first, then add cross-compile support
-    $ ./make.bash --no-clean
-    $ GOOS=linux GOARCH=amd64 ./make.bash --no-clean
+Or you can install Go from source by following the official instructions.
+(http://golang.org/doc/install).
 
 Once you can compile to ``linux/amd64``, you should be able to compile Deis'
 components as normal.
@@ -106,6 +103,21 @@ allocating a big disk is a good idea.
 
 At this point, our `deis-registry` VM can now serve as a registry for Deis'
 Docker images. Later we will return to this.
+
+Install Kubernets On Vagrant
+----------------------------
+
+Deis v2 runs atop Kubernetes (k8s). The offical Kubernetes documentation
+will get you started. (http://kubernetes.io/v1.0/docs/getting-started-guides/vagrant.html)
+
+.. code-block:: console
+
+    export KUBERNETES_PROVIDER=vagrant
+    curl -sS https://get.k8s.io | bash
+
+This will install a local Kubernetes cluster. By the time the installation is
+done, you should be able to use `kubectl` (or `kubernetes/cluster/kubectl.sh`)
+to contact the cluster.
 
 Fork the Deis Repository
 ------------------------
