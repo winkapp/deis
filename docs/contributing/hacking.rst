@@ -112,12 +112,16 @@ will get you started. (http://kubernetes.io/v1.0/docs/getting-started-guides/vag
 
 .. code-block:: console
 
-    export KUBERNETES_PROVIDER=vagrant
-    curl -sS https://get.k8s.io | bash
+    $ export KUBERNETES_PROVIDER=vagrant
+    $ curl -sS https://get.k8s.io | bash
+    $ ./kubernetes/cluster/kube-up.sh
 
 This will install a local Kubernetes cluster. By the time the installation is
 done, you should be able to use `kubectl` (or `kubernetes/cluster/kubectl.sh`)
 to contact the cluster.
+
+At any point you can stop the cluster with `vagrant halt`, and restart it by
+re-running `./kubernetes/cluster/kube-up.sh`.
 
 Fork the Deis Repository
 ------------------------
