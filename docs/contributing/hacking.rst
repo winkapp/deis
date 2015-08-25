@@ -120,6 +120,11 @@ This will install a local Kubernetes cluster. By the time the installation is
 done, you should be able to use `kubectl` (or `kubernetes/cluster/kubectl.sh`)
 to contact the cluster.
 
+.. note::
+
+    If you would like to use the development version of Kubernetes instead of
+    a released verison, follow the `official k8s instructions`_.
+
 At any point you can stop the cluster with `vagrant halt`, and restart it by
 re-running `./kubernetes/cluster/kube-up.sh`.
 
@@ -453,3 +458,4 @@ when proposing a change to Deis.
 .. _`running the tests`: https://github.com/deis/deis/tree/master/tests#readme
 .. _`pull request`: https://github.com/deis/deis/pulls
 .. _`most common`: https://help.github.com/articles/fork-a-repo/
+.. _`official k8s instructions`: http://kubernetes.io/v1.0/docs/devel/developer-guides/vagrant.html
