@@ -1,0 +1,23 @@
+{
+   "kind":"Service",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-portunes",
+      "labels":{
+         "name":"deis-portunes",
+         "app":"deis"
+      }
+   },
+   "spec":{
+      "ports": [
+        {
+          "port":80,
+          "targetPort":8090,
+          "protocol":"TCP"
+        }
+      ],
+      "selector":{
+         "name":"deis-portunes"
+      }
+   }
+}
