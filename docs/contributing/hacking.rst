@@ -44,30 +44,11 @@ At a glance, you will need:
 In most cases, you should simply install according to the instructions. There
 are a few special cases, though. We cover these below.
 
-Configuring Go for Cross Compiling
-``````````````````````````````````
-
-If your local workstation does not support the linux/amd64 target environment, you will
-have to install Go from source with cross-compile support for that environment. This is
-because some of the components are built on your local machine and then injected into a
-docker container.
-
 .. note::
 
-    You must have Go 1.5 or later. If you use Go 1.5, enable the Vendor
-    Experiment by setting `export GO15VENDOREXPERIMENT=1`.
-
-Homebrew users can just install with cross compiling support:
-
-.. code-block:: console
-
-    $ brew install go --with-cc-common
-
-Or you can install Go from source by following the official instructions.
-(http://golang.org/doc/install).
-
-Once you can compile to ``linux/amd64``, you should be able to compile Deis'
-components as normal.
+    Most Go packages from 1.5 onward support cross-compiling to Linux/amd64
+    out-of-the-box. If your version does not, you will need to install support
+    for cross-compiling.
 
 Configuring Docker Machine (Mac)
 ````````````````````````````````
@@ -101,24 +82,78 @@ allocating a big disk is a good idea.
     somewhere in the 192.168.0.0/16 range. We must declare that explicitly when
     configuring Docker Machine.
 
+Once the machine has been created, set the necessary environment variables:
+
+.. code-block:: console
+
+    $ eval $(docker-machine env deis-registry)
+    $ export DEIS_REGISTRY=$(docker-machine ip deis-registry):5000
+
 At this point, our `deis-registry` VM can now serve as a registry for Deis'
-Docker images. Later we will return to this.
+Docker images. It can also be used as a build environment for Kubernetes.
 
 Install Kubernets On Vagrant
 ----------------------------
 
-Deis v2 runs atop Kubernetes (k8s). The offical Kubernetes documentation
-will get you started. (http://kubernetes.io/v1.0/docs/getting-started-guides/vagrant.html)
+Deis v2 runs atop Kubernetes (k8s). For development, we recommend running a
+local Kubernetes cluster. Because you may desire to reconfigure your
+Kubernetes cluster, we recommend building from Kubernetes source. Follow the
+`official k8s instructions`_.
+
+.. note::
+
+    You should already have a Docker Machine image created in the previous
+    step. You do not need to create a new one as is suggested in the
+    Kubernetes documents. Simply use `deis-registry` instead of `kube-dev`.
+
+Once you have a Kubernetes cluster, you can point it to your Docker registry
+by editing the Salt configuration. Assuming you have an environment variable
+named `$K8S` that points to your Kubernetes source code, you will need to
+modify the vagrant configuration slightly.
+
+In `$K8S/cluster/vagrant`, locate the file named `config-default.sh` and
+copy it:
 
 .. code-block:: console
 
-    $ export KUBERNETES_PROVIDER=vagrant
-    $ curl -sS https://get.k8s.io | bash
-    $ ./kubernetes/cluster/kube-up.sh
+    $ cp config-default.sh my-vagrant-config.sh
+    $ export KUBE_CONFIG_FILE=my-vagrant-config.sh
 
-This will install a local Kubernetes cluster. By the time the installation is
-done, you should be able to use `kubectl` (or `kubernetes/cluster/kubectl.sh`)
-to contact the cluster.
+.. note::
+
+   At the time of this writing, your custom config.sh file must reside
+   under `$K8S/cluster/vagrant/`.
+
+Now we need to make the following changes:
+
+- Find `EXTRA_DOCKER_OPTS` and add `--insecure-registry 192.168.0.0/16`.
+
+.. code-block:: console
+
+    EXTRA_DOCKER_OPTS="-b=cbr0 --insecure-registry 10.0.0.0/8 --insecure-registry 192.168.0.0/16"
+
+
+Once these changes are made, we can restart our Kubernetes cluster.
+
+.. code-block:: console
+
+    $ cd $K8S/cluster
+    $ vagrant halt # if you haven't already
+    $ ./kube-up.sh
+
+`kube-up.sh` will take a long time to run the first time. When it completes, it
+will print out information about connecting to your cluster. At this point, you
+should verify that you can connect to Kubernetes.
+
+.. code-block:: console
+
+    $ kuebctl get nodes
+    NAME         LABELS                              STATUS
+    10.245.1.3   kubernetes.io/hostname=10.245.1.3   Ready
+
+The `kubectl get nodes` command should show at least one node in state `READY`.
+Now that Kubernetes is up and running, we can procede to the installation of
+the Deis platform.
 
 .. note::
 
