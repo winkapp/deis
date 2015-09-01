@@ -1,21 +1,54 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/deis/deis/trireme/platform"
 	"github.com/deis/deis/trireme/storage"
 )
 
-var parts = map[string]string{
-	// In alpha order, please.
-	"builder":    "the builder",
-	"controller": "the controller",
-	"database":   "the database",
-	"router":     "the router mesh",
-	"store":      "the store and all of its components",
-	// FIXME: Do the rest.
+// Components, in the order in which they must be started.
+var components = []*platform.Component{
+	{
+		Name:        "builder",
+		Description: "the builder",
+		RCs:         []string{"deis-builder.json"},
+		Services:    []string{"deis-builder-service.json"},
+	},
+	{
+		Name:        "controller",
+		Description: "the controller",
+		RCs:         []string{"deis-controller.json"},
+		Services:    []string{"deis-controller-service.json"},
+	},
+	{
+		Name:        "database",
+		Description: "the database",
+		RCs:         []string{"deis-database.json"},
+		Services:    []string{"deis-database-service.json"},
+	},
+	{
+		Name:        "registry",
+		Description: "the registry",
+		RCs:         []string{"deis-registry.json"},
+		Services:    []string{"deis-registry-service.json"},
+	},
+	{
+		Name:        "router",
+		Description: "the router mesh",
+		RCs:         []string{"router.json"},
+		Services:    []string{"router-service.json"},
+	},
+	{
+		Name:        "store",
+		Description: "the persistent storage cluster",
+		RCs:         []string{"deis-store-gtw.json", "deis-store-mds.json", "deis-store-mon.json", "deis-store-osd.json"},
+		Services:    []string{"deis-store-gtw-service.json"},
+		Optional:    true,
+	},
 }
 
 var config storage.Storer
@@ -42,13 +75,8 @@ func main() {
 func commands() []cli.Command {
 	return []cli.Command{
 		{
-			Name:  "install",
-			Usage: "Install platform components",
-			/*
-				Action: func(c *cli.Context) {
-					fmt.Println("I can only install Platform right now.")
-				},
-			*/
+			Name:        "install",
+			Usage:       "Install platform components",
 			Subcommands: installCommands(),
 		},
 		{
@@ -64,7 +92,7 @@ func defaultConfigFile() string {
 }
 
 func configCommands() []cli.Command {
-	cmds := make([]cli.Command, 0, len(parts)+3)
+	cmds := make([]cli.Command, 0, len(components)+3)
 
 	// Why deprecate `deisctl config <target> set ...`? Three reasons:
 	// 1. The predominant form of multi-commands is <CMD> <VERB> <DO>..., not
@@ -130,7 +158,8 @@ func configCommands() []cli.Command {
 		},
 	)
 
-	for n, _ := range parts {
+	for _, c := range components {
+		n := c.Name
 		cmds = append(cmds, cli.Command{
 			Name:  n,
 			Usage: fmt.Sprintf("Deprecated. Use `deisctl config set|get|rm %s`", n),
@@ -173,9 +202,11 @@ func configCommands() []cli.Command {
 func installCommands() []cli.Command {
 
 	// This basically ensures that append() will not have to reallocate.
-	cmds := make([]cli.Command, 0, len(parts)+1)
+	cmds := make([]cli.Command, 0, len(components)+1)
 
-	for n, v := range parts {
+	for _, c := range components {
+		n := c.Name
+		v := c.Description
 		cmds = append(cmds, cli.Command{
 			Name:   n,
 			Usage:  fmt.Sprintf("Install %s.", v),
@@ -206,8 +237,32 @@ func installCommands() []cli.Command {
 
 func installPlatform(c *cli.Context) {
 	fmt.Println("Installing platform")
+	if err := platform.InstallAll(components, false); err != nil {
+		fmt.Printf("Failed to install platform: %s\n", err)
+		os.Exit(500)
+	}
 }
 func installComponent(c *cli.Context, name string) {
-	fmt.Printf("Installing component '%s' is currently not supported.\n", name)
-	os.Exit(1)
+	comp, err := findComponent(name)
+	if err != nil {
+		fmt.Printf("Failed to install %s: %s\n", name, err)
+		os.Exit(404)
+	}
+	if err := comp.InstallPrereqs(); err != nil {
+		fmt.Printf("Failed to install prereqs of %s: %s\n", name, err)
+		os.Exit(500)
+	}
+	if err := comp.Install(); err != nil {
+		fmt.Printf("Failed to install %s: %s\n", name, err)
+		os.Exit(500)
+	}
+}
+
+func findComponent(name string) (*platform.Component, error) {
+	for _, c := range components {
+		if c.Name == name {
+			return c, nil
+		}
+	}
+	return nil, errors.New("no component found")
 }
