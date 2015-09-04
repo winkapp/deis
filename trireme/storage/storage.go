@@ -1,6 +1,6 @@
 /* Package storage defines a backend for storing and retrieving configuration data.
 
-*/
+ */
 package storage
 
 import (

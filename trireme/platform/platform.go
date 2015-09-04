@@ -3,11 +3,19 @@
 package platform
 
 import (
+	//"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/deis/deis/trireme/k8s"
+	"github.com/deis/deis/trireme/storage"
+
+	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/latest"
 )
 
 // Component describes a component of the Deis platform.
@@ -167,6 +175,83 @@ func DeleteAll(list []*Component, dir string) error {
 	}
 	if incomplete {
 		return errors.New("Incomplete deletion")
+	}
+	return nil
+}
+
+// filterFunc takes data, a component , and storage and filters the data.
+type filterFunc func([]byte, *Component, storage.Storer) ([]byte, error)
+
+var filterMap = map[string]filterFunc{
+	"RCs": rcFilter,
+}
+
+func rcFilter(data []byte, comp *Component, store storage.Storer) ([]byte, error) {
+	var rc *api.ReplicationController
+	if o, err := k8s.Decode(data); err != nil {
+		return data, err
+	} else {
+		rc = o.(*api.ReplicationController)
+	}
+
+	rc.APIVersion = "v1"
+	rc.Kind = "ReplicationController"
+
+	fmt.Printf("APIVersion:%s, Kind: %s\n", rc.APIVersion, rc.Kind)
+
+	kname := rc.Name
+
+	val, err := store.Get(kname, "image")
+	if err == nil && len(val) > 0 {
+		orig := rc.Spec.Template.Spec.Containers[0].Image
+		rc.Spec.Template.Spec.Containers[0].Image = val
+		fmt.Printf("===> Replacing %s with %s\n", orig, val)
+	}
+
+	return latest.Codec.Encode(rc)
+	//return json.MarshalIndent(rc, "", "  ")
+}
+
+// RebuildDefs reads a set of files, rebuilds, and writes them.
+//
+// To rebuild, this applies a finite set of hard-coded rules to transform
+// a source file via configuration directives into a destination.
+func RebuildDefs(src, dest string, comps []*Component, store storage.Storer) error {
+
+	rebuild := []string{"Services", "Namespaces", "Volumes", "Secrets", "RCs", "Pods"}
+	for _, comp := range comps {
+		cv := reflect.Indirect(reflect.ValueOf(comp))
+		for _, n := range rebuild {
+			fv := cv.FieldByName(n)
+			if fv.Len() > 0 {
+				for _, file := range fv.Interface().([]string) {
+
+					src := filepath.Join(src, file)
+					dest := filepath.Join(dest, file)
+
+					fmt.Printf("Rebuilding file %s to %s\n", src, dest)
+					// Ensure that the basedir exists in dest
+					os.MkdirAll(filepath.Dir(dest), 0755)
+
+					in, err := ioutil.ReadFile(src)
+					if err != nil {
+						return err
+					}
+
+					if fn, ok := filterMap[n]; ok {
+						fmt.Printf("Found filter func for %s\n", n)
+						in, err = fn(in, comp, store)
+						if err != nil {
+							return err
+						}
+					}
+					if err := ioutil.WriteFile(dest, in, 0755); err != nil {
+						return err
+					}
+
+				}
+			}
+		}
 	}
 	return nil
 }

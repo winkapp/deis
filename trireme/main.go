@@ -104,6 +104,32 @@ func commands() []cli.Command {
 			Usage:       "Uninstall platform components",
 			Subcommands: uninstallCommands(),
 		},
+		// This may be transitional only.
+		{
+			Name:  "rebuild-definitions",
+			Usage: "Rebuild the Kubernetes definitions based on config values.",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   "src, s",
+					Value:  "units/",
+					Usage:  "Location of existing Kubernetes definitions.",
+					EnvVar: "DEISCTL_UNITS",
+				},
+				cli.StringFlag{
+					Name:  "dest, d",
+					Value: "./",
+					Usage: "Location to write new Kubernetes definitions.",
+				},
+			},
+			Action: func(c *cli.Context) {
+				from := c.String("src")
+				to := c.String("dest")
+				if err := platform.RebuildDefs(from, to, components, config); err != nil {
+					fmt.Printf("Failed to rebuild definitions: %s\n", err)
+					os.Exit(2)
+				}
+			},
+		},
 	}
 }
 
@@ -230,6 +256,19 @@ func installCommands() []cli.Command {
 			Name:   n,
 			Usage:  fmt.Sprintf("Install %s.", v),
 			Action: func(c *cli.Context) { installComponent(c, n) },
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   "unit-files, u",
+					Value:  "./units/",
+					Usage:  "The path to the Deis Kubernetes JSON unit files.",
+					EnvVar: "DEISCTL_UNITS",
+				},
+				cli.StringFlag{
+					Name:   "registry, r",
+					Usage:  "The URL to a Docker registry that holds Deis images images.",
+					EnvVar: "DEV_REGISTRY",
+				},
+			},
 		})
 	}
 	cmds = append(cmds, cli.Command{
