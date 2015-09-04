@@ -3,7 +3,6 @@
 package platform
 
 import (
-	//"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -180,12 +179,23 @@ func DeleteAll(list []*Component, dir string) error {
 }
 
 // filterFunc takes data, a component , and storage and filters the data.
+//
+// When we import k8s files for rewriting, they are rewritten by filter
+// functions. The function is expected to do its own decoding and encoding
+// of the data, since these steps sometimes require non-generic information
+// about the input.
+//
+// The returned result ought to be a []byte containing JSON-encoded data.
 type filterFunc func([]byte, *Component, storage.Storer) ([]byte, error)
 
+// filterMap maps a Component list type to a function for filtering.
 var filterMap = map[string]filterFunc{
 	"RCs": rcFilter,
 }
 
+// rcFilter filters replication controller data.
+//
+// This will contain Deis-specific logic for replication controller config.
 func rcFilter(data []byte, comp *Component, store storage.Storer) ([]byte, error) {
 	var rc *api.ReplicationController
 	if o, err := k8s.Decode(data); err != nil {
@@ -194,13 +204,13 @@ func rcFilter(data []byte, comp *Component, store storage.Storer) ([]byte, error
 		rc = o.(*api.ReplicationController)
 	}
 
+	// This feels really hacky. I think we should be able to remove it
+	// at some point.
 	rc.APIVersion = "v1"
 	rc.Kind = "ReplicationController"
 
-	fmt.Printf("APIVersion:%s, Kind: %s\n", rc.APIVersion, rc.Kind)
-
+	// Replace the image name with whatever config has been set for it.
 	kname := rc.Name
-
 	val, err := store.Get(kname, "image")
 	if err == nil && len(val) > 0 {
 		orig := rc.Spec.Template.Spec.Containers[0].Image
@@ -209,7 +219,6 @@ func rcFilter(data []byte, comp *Component, store storage.Storer) ([]byte, error
 	}
 
 	return latest.Codec.Encode(rc)
-	//return json.MarshalIndent(rc, "", "  ")
 }
 
 // RebuildDefs reads a set of files, rebuilds, and writes them.
@@ -238,6 +247,8 @@ func RebuildDefs(src, dest string, comps []*Component, store storage.Storer) err
 						return err
 					}
 
+					// If there is a filter function for this, run it through
+					// the filter function.
 					if fn, ok := filterMap[n]; ok {
 						fmt.Printf("Found filter func for %s\n", n)
 						in, err = fn(in, comp, store)
