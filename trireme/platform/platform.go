@@ -223,6 +223,9 @@ func rcFilter(data []byte, comp *Component, store storage.Storer) ([]byte, error
 
 // RebuildDefs reads a set of files, rebuilds, and writes them.
 //
+// This is a utility for taking the published definitions and rewriting them
+// into customized definitions.
+//
 // To rebuild, this applies a finite set of hard-coded rules to transform
 // a source file via configuration directives into a destination.
 func RebuildDefs(src, dest string, comps []*Component, store storage.Storer) error {
