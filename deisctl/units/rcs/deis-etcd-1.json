@@ -1,0 +1,37 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-etcd-1",
+      "labels":{
+         "name":"deis-etcd-1"
+      }
+   },
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"deis-etcd-1"
+      },
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"deis-etcd-1"
+            }
+         },
+         "spec":{
+            "containers":[
+               {
+                  "name":"deis-etcd-1",
+                  "image":"deis-etcd:0",
+                   "env":[
+                     {
+                       "name" : "ETCD_INITIAL_CLUSTER_STATE",
+                       "value" : "new"
+                     }
+                   ]
+               }
+            ]
+         }
+      }
+   }
+}
