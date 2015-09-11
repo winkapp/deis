@@ -11,8 +11,14 @@
    "spec":{
       "ports": [
         {
+          "name": "peer",
           "port":2380,
-          "targetPort":2380,
+          "protocol":"TCP"
+        },
+        {
+          "name": "client",
+          "port":4100,
+          "targetPort":4100,
           "protocol":"TCP"
         }
       ],

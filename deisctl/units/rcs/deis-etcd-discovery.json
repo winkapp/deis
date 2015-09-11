@@ -2,20 +2,20 @@
    "kind":"ReplicationController",
    "apiVersion":"v1",
    "metadata":{
-      "name":"deis-etcd-3",
+      "name":"deis-etcd-discovery-rc",
       "labels":{
-         "name":"deis-etcd-3"
+         "name":"deis-etcd-discovery-rc"
       }
    },
    "spec":{
       "replicas":1,
       "selector":{
-         "name":"deis-etcd-3"
+         "name":"deis-etcd-discovery-rc"
       },
       "template":{
          "metadata":{
             "labels":{
-               "name":"deis-etcd-3"
+               "name":"deis-etcd-discovery-rc"
             }
          },
          "spec":{
@@ -29,12 +29,12 @@
            ],
             "containers":[
                {
-                  "name":"deis-etcd-3",
-                  "image":"192.168.99.102:5000/deis/etcd:23",
+                  "name":"deis-etcd-discovery-rc",
+                  "image":"192.168.99.102:5000/deis/etcd-discovery:17",
                    "env":[
                      {
-                       "name": "ETCD_NAME",
-                       "value": "deis3"
+                       "name": "DEIS_ETCD_CLUSTER_SIZE",
+                       "value": "3"
                      }
                    ],
                    "volumeMounts": [{
