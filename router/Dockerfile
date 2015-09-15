@@ -23,6 +23,9 @@ COPY rootfs /
 
 # compile nginx from source
 RUN build
+# forward request and error logs to docker
+RUN ln -sf /dev/stdout /opt/nginx/logs/access.log
+RUN ln -sf /dev/stderr /opt/nginx/logs/error.log
 
 CMD ["boot"]
 EXPOSE 80 2222

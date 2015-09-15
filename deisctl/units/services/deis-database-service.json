@@ -1,0 +1,23 @@
+{
+   "kind":"Service",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-database",
+      "labels":{
+         "name":"deis-database",
+         "app":"deis"
+      }
+   },
+   "spec":{
+      "ports": [
+        {
+          "port":80,
+          "targetPort":5432,
+          "protocol":"TCP"
+        }
+      ],
+      "selector":{
+         "name":"deis-database"
+      }
+   }
+}

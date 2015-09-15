@@ -1,0 +1,4 @@
+exams:
+  - name: HTTP Self Test
+    interval: 30s
+historyLen: 20

@@ -1,0 +1,37 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-registry",
+      "labels":{
+         "name":"deis-registry"
+      }
+   },
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"deis-registry"
+      },
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"deis-registry"
+            }
+         },
+         "spec":{
+            "containers":[
+               {
+                  "name":"deis-registry",
+                  "image":"registry.smothiki.io:5000/deis/registry:git-c9b8f42",
+                   "env":[
+                     {
+                       "name" : "HOST",
+                       "value" : "10.240.84.7"
+                     }
+                   ]
+               }
+            ]
+         }
+      }
+   }
+}

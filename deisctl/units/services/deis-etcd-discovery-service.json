@@ -1,0 +1,23 @@
+{
+   "kind":"Service",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-etcd-discovery",
+      "labels":{
+         "name":"deis-etcd-discovery",
+         "app":"deis"
+      }
+   },
+   "spec":{
+      "ports": [
+        {
+          "name": "client",
+          "port":2379,
+          "protocol":"TCP"
+        }
+      ],
+      "selector":{
+         "name":"deis-etcd-discovery-rc"
+      }
+   }
+}

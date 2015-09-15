@@ -117,8 +117,86 @@ allocating a big disk is a good idea.
     somewhere in the 192.168.0.0/16 range. We must declare that explicitly when
     configuring Docker Machine.
 
+Once the machine has been created, set the necessary environment variables:
+
+.. code-block:: console
+
+    $ eval $(docker-machine env deis-registry)
+    $ export DEIS_REGISTRY=$(docker-machine ip deis-registry):5000
+
 At this point, our `deis-registry` VM can now serve as a registry for Deis'
-Docker images. Later we will return to this.
+Docker images. It can also be used as a build environment for Kubernetes.
+
+Install Kubernets On Vagrant
+----------------------------
+
+Deis v2 runs atop Kubernetes (k8s). For development, we recommend running a
+local Kubernetes cluster. Because you may desire to reconfigure your
+Kubernetes cluster, we recommend building from Kubernetes source. Follow the
+`official k8s instructions`_.
+
+.. note::
+
+    You should already have a Docker Machine image created in the previous
+    step. You do not need to create a new one as is suggested in the
+    Kubernetes documents. Simply use `deis-registry` instead of `kube-dev`.
+
+Once you have a Kubernetes cluster, you can point it to your Docker registry
+by editing the Salt configuration. Assuming you have an environment variable
+named `$K8S` that points to your Kubernetes source code, you will need to
+modify the vagrant configuration slightly.
+
+In `$K8S/cluster/vagrant`, locate the file named `config-default.sh` and
+copy it:
+
+.. code-block:: console
+
+    $ cp config-default.sh my-vagrant-config.sh
+    $ export KUBE_CONFIG_FILE=my-vagrant-config.sh
+
+.. note::
+
+   At the time of this writing, your custom config.sh file must reside
+   under `$K8S/cluster/vagrant/`.
+
+Now we need to make the following changes:
+
+- Find `EXTRA_DOCKER_OPTS` and add `--insecure-registry 192.168.0.0/16`.
+
+.. code-block:: console
+
+    EXTRA_DOCKER_OPTS="-b=cbr0 --insecure-registry 10.0.0.0/8 --insecure-registry 192.168.0.0/16"
+
+
+Once these changes are made, we can restart our Kubernetes cluster.
+
+.. code-block:: console
+
+    $ cd $K8S/cluster
+    $ vagrant halt # if you haven't already
+    $ ./kube-up.sh
+
+`kube-up.sh` will take a long time to run the first time. When it completes, it
+will print out information about connecting to your cluster. At this point, you
+should verify that you can connect to Kubernetes.
+
+.. code-block:: console
+
+    $ kuebctl get nodes
+    NAME         LABELS                              STATUS
+    10.245.1.3   kubernetes.io/hostname=10.245.1.3   Ready
+
+The `kubectl get nodes` command should show at least one node in state `READY`.
+Now that Kubernetes is up and running, we can procede to the installation of
+the Deis platform.
+
+.. note::
+
+    If you would like to use the development version of Kubernetes instead of
+    a released verison, follow the `official k8s instructions`_.
+
+At any point you can stop the cluster with `vagrant halt`, and restart it by
+re-running `./kubernetes/cluster/kube-up.sh`.
 
 Fork the Deis Repository
 ------------------------
@@ -436,3 +514,4 @@ when proposing a change to Deis.
 .. _`running the tests`: https://github.com/deis/deis/tree/master/tests#readme
 .. _`pull request`: https://github.com/deis/deis/pulls
 .. _`most common`: https://help.github.com/articles/fork-a-repo/
+.. _`official k8s instructions`: http://kubernetes.io/v1.0/docs/devel/developer-guides/vagrant.html

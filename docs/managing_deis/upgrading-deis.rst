@@ -72,8 +72,8 @@ Graceful Upgrade
 ----------------
 
 Alternatively, an experimental feature exists to provide the ability to perform a graceful upgrade. This process is
-available for version 1.9.0 moving foward and is intended to facilitate upgrades within a major version (for example,
-from 1.9.0 to 1.9.1 or 1.10.0). Upgrading between major versions is not supported (for example, from 1.9.0 to a
+available for version 1.9.1 moving foward and is intended to facilitate upgrades within a major version (for example,
+from 1.9.1 to 1.9.1 or 1.10.0). Upgrading between major versions is not supported (for example, from 1.9.1 to a
 future 2.0.0). Unlike the in-place process above, this process keeps the platform's routers and publishers up during
 the upgrade process. This means that there should only be a maximum of around 1-2 seconds of downtime while the
 routers boot up. Many times, there will be no downtime at all.

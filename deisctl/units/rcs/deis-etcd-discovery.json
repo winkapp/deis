@@ -1,0 +1,56 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-etcd-discovery-rc",
+      "labels":{
+         "name":"deis-etcd-discovery-rc"
+      }
+   },
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"deis-etcd-discovery-rc"
+      },
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"deis-etcd-discovery-rc"
+            }
+         },
+         "spec":{
+           "volumes": [
+             {
+               "name": "discovery-token",
+               "secret": {
+                 "secretName": "deis-etcd-discovery-token"
+               }
+             }
+           ],
+            "containers":[
+               {
+                  "name":"deis-etcd-discovery-rc",
+                  "image":"upstream:5000/deis/etcd-discovery:1",
+                  "ports": [
+                    {
+                      "hostPort": 2379,
+                      "containerPort":2379
+                    }
+                  ],
+                   "env":[
+                     {
+                       "name": "DEIS_ETCD_CLUSTER_SIZE",
+                       "value": "3"
+                     }
+                   ],
+                   "volumeMounts": [{
+                     "name": "discovery-token",
+                     "readOnly": true,
+                     "mountPath": "/var/run/secrets/deis/etcd/discovery"
+                   }]
+               }
+            ]
+         }
+      }
+   }
+}
