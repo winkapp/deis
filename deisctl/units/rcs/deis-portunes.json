@@ -1,0 +1,31 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1",
+   "metadata":{
+      "name":"deis-portunes",
+      "labels":{
+         "name":"deis-portunes"
+      }
+   },
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"deis-portunes"
+      },
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"deis-portunes"
+            }
+         },
+         "spec":{
+            "containers":[
+               {
+                  "name":"deis-portunes",
+                  "image":"deis/portunes:latest"
+               }
+            ]
+         }
+      }
+   }
+}
