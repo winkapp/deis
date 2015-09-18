@@ -1,6 +1,7 @@
 package drain
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -38,12 +39,16 @@ func SendToDrain(m string, drain string) error {
 func sendToHttpsDrain(m string, drain string) error {
 	buf := strings.NewReader(m)
 
-	log.Println("no-drain Sending log message to: " + drain)
-	resp, err := http.Post(("https://" + drain), "text/plain", buf)
-	if err != nil {
-		log.Print("no-drain Https Log Error: " + err.Error())
-	}
-	log.Print("no-drain Https Log Response Status: " + resp.Status)
+	tr := &http.Transport{
+  	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+  }
+
+  client := &http.Client{Transport: tr}
+
+  resp, err := client.Post(("https://" + drain), "text/plain", buf)
+  if err != nil {
+    fmt.Println("no-drain Https Log Error: " + err.Error())
+  }
 	resp.Body.Close()
 	return nil
 }
