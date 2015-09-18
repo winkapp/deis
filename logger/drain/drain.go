@@ -7,10 +7,18 @@ import (
 	"net/url"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
 func SendToDrain(m string, drain string) error {
+	// We don't want drain our own log messages. It creates an infinite loop.
+	re := regexp.MustCompile("^no-drain")
+	match := re.FindStringIndex(m)
+	if match != nil {
+		return nil
+	}
+
 	u, err := url.Parse(drain)
 	if err != nil {
 		log.Fatal(err)
@@ -22,7 +30,7 @@ func SendToDrain(m string, drain string) error {
 	case "https":
 		sendToHttpsDrain(m, uri)
 	default:
-		log.Println(u.Scheme + " drain type is not implemented.")
+		log.Println("no-drain " + u.Scheme + " drain type is not implemented.")
 	}
 	return nil
 }
@@ -30,13 +38,14 @@ func SendToDrain(m string, drain string) error {
 func sendToHttpsDrain(m string, drain string) error {
 	buf := strings.NewReader(m)
 
-	log.Println("Sending log message to: " + drain)
+	log.Println("no-drain Sending log message to: " + drain)
 	resp, err := http.Post(("https://" + drain), "text/plain", buf)
 	if err != nil {
-		log.Print(err)
+		log.Print("no-drain Https Log Error: " + err.Error())
 	}
+	log.Print("no-drain Https Log Response Status: " + resp.Status)
 	resp.Body.Close()
-	return err
+	return nil
 }
 
 func sendToSyslogDrain(m string, drain string) error {
