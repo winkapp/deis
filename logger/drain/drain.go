@@ -5,7 +5,9 @@ import (
 	"log"
 	"net"
 	"net/url"
+	"net/http"
 	"os"
+	"strings"
 )
 
 func SendToDrain(m string, drain string) error {
@@ -17,10 +19,19 @@ func SendToDrain(m string, drain string) error {
 	switch u.Scheme {
 	case "syslog":
 		sendToSyslogDrain(m, uri)
+	case "https":
+		sendToHttpsDrain(m, uri)
 	default:
 		log.Println(u.Scheme + " drain type is not implemented.")
 	}
 	return nil
+}
+
+func sendToHttpsDrain(m string, drain string) error {
+	buf := strings.NewReader(m)
+	resp, err := http.Post(("https://" + drain), "text/plain", buf)
+	resp.Body.Close()
+	return err
 }
 
 func sendToSyslogDrain(m string, drain string) error {
