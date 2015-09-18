@@ -29,7 +29,12 @@ func SendToDrain(m string, drain string) error {
 
 func sendToHttpsDrain(m string, drain string) error {
 	buf := strings.NewReader(m)
+
+	log.Println("Sending log message to: " + drain)
 	resp, err := http.Post(("https://" + drain), "text/plain", buf)
+	if err != nil {
+		log.Print(err)
+	}
 	resp.Body.Close()
 	return err
 }
