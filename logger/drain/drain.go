@@ -19,10 +19,11 @@ func SendToDrain(m string, drain string) error {
 	if match != nil {
 		return nil
 	}
+	fmt.Println("no-drain sending message: " + m)
 
 	u, err := url.Parse(drain)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("no-drain drain uri parse error: " + err.Error())
 	}
 	uri := u.Host + u.Path
 	switch u.Scheme {
@@ -31,13 +32,13 @@ func SendToDrain(m string, drain string) error {
 	case "https":
 		sendToHttpsDrain(m, uri)
 	default:
-		log.Println("no-drain " + u.Scheme + " drain type is not implemented.")
+		fmt.Println("no-drain " + u.Scheme + " drain type is not implemented.")
 	}
 	return nil
 }
 
 func sendToHttpsDrain(m string, drain string) error {
-	fmt.Println("no-drain sending message: " + m)
+
 	buf := strings.NewReader(m)
 
 	tr := &http.Transport{
