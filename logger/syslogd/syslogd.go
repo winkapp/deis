@@ -90,11 +90,11 @@ func (h *handler) mainLoop() {
 			break
 		}
 		drainURI := h.drainURI
-		//re := regexp.MustCompile("no-drain")
-		//match := re.FindStringIndex(m.String())
-		//if match == nil {
-			//log.Println("no-drain Drain URI is " + drainURI)
-		//}
+		re := regexp.MustCompile("no-drain")
+		match := re.FindStringIndex(m.String())
+		if match == nil {
+			log.Println("no-drain Drain URI is " + drainURI)
+		}
 		if h.drainURI != "" {
 			drain.SendToDrain(m.String(), drainURI)
 		}
