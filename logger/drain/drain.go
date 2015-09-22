@@ -14,7 +14,7 @@ import (
 
 func SendToDrain(m string, drain string) error {
 	// We don't want drain our own log messages. It creates an infinite loop.
-	re := regexp.MustCompile("^no-drain")
+	re := regexp.MustCompile("no-drain")
 	match := re.FindStringIndex(m)
 	if match != nil {
 		return nil
