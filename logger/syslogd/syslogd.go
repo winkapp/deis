@@ -89,6 +89,9 @@ func (h *handler) mainLoop() {
 		if m == nil {
 			break
 		}
+		drainURI := h.drainURI
+		log.Println("Drain URI is " + drainURI)
+		log.Println("Pre drain message: " + m.String())
 		if h.drainURI != "" {
 			drain.SendToDrain(m.String(), h.drainURI)
 		}
