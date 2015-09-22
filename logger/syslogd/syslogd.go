@@ -89,14 +89,8 @@ func (h *handler) mainLoop() {
 		if m == nil {
 			break
 		}
-		drainURI := h.drainURI
-		// re := regexp.MustCompile("no-drain")
-		// match := re.FindStringIndex(m.String())
-		// if match == nil {
-		// 	log.Println("no-drain Drain URI is " + drainURI)
-		// }
 		if h.drainURI != "" {
-			drain.SendToDrain(m.String(), drainURI)
+			drain.SendToDrain(m.String(), h.drainURI)
 		}
 		err := writeToDisk(m)
 		if err != nil {

@@ -19,7 +19,6 @@ func SendToDrain(m string, drain string) error {
 	if match != nil {
 		return nil
 	}
-	fmt.Println("no-drain sending message: " + m)
 
 	u, err := url.Parse(drain)
 	if err != nil {
