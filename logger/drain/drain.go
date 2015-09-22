@@ -37,6 +37,7 @@ func SendToDrain(m string, drain string) error {
 }
 
 func sendToHttpsDrain(m string, drain string) error {
+	fmt.Println("no-drain sending message: " + m)
 	buf := strings.NewReader(m)
 
 	tr := &http.Transport{
